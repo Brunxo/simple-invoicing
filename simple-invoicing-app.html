@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creador de Facturas Completo (Tabla Alineada)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .section label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .section input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        .section button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .section button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Creador de Facturas Completo (Tabla Alineada)</h1>
+
+        <!-- SECCIÓN: DATOS DEL PROFESIONAL -->
+        <div class="section">
+            <h2>DATOS DEL PROFESIONAL</h2>
+            <label for="prof_name">Nombre:</label>
+            <input type="text" id="prof_name">
+            <label for="prof_cif">CIF/NIF:</label>
+            <input type="text" id="prof_cif">
+            <label for="prof_address">Dirección:</label>
+            <input type="text" id="prof_address">
+            <label for="prof_city">Ciudad y CP:</label>
+            <input type="text" id="prof_city">
+            <label for="prof_phone">Teléfono:</label>
+            <input type="text" id="prof_phone">
+        </div>
+
+        <!-- SECCIÓN: DATOS DEL CLIENTE -->
+        <div class="section">
+            <h2>DATOS DEL CLIENTE</h2>
+            <label for="client_name">Nombre o Razón Social:</label>
+            <input type="text" id="client_name">
+            <label for="client_cif">CIF/NIF:</label>
+            <input type="text" id="client_cif">
+            <label for="client_address">Dirección:</label>
+            <input type="text" id="client_address">
+            <label for="client_city">Ciudad y CP:</label>
+            <input type="text" id="client_city">
+        </div>
+
+        <!-- SECCIÓN: FACTURA (NÚMERO Y FECHA) -->
+        <div class="section">
+            <h2>FACTURA</h2>
+            <label for="invoice_num">Número de Factura:</label>
+            <input type="text" id="invoice_num" value="D/00206/2024">
+            <label for="invoice_date">Fecha de la Factura:</label>
+            <input type="text" id="invoice_date">
+        </div>
+
+        <!-- SECCIÓN: ARTÍCULOS (CONCEPTOS) -->
+        <div class="section">
+            <h2>ARTÍCULOS</h2>
+            <label for="item_ref">Ref:</label>
+            <input type="text" id="item_ref">
+            <label for="item_desc">Descripción:</label>
+            <input type="text" id="item_desc">
+            <label for="item_classes">Clases:</label>
+            <input type="text" id="item_classes">
+            <label for="item_price">Precio:</label>
+            <input type="text" id="item_price">
+            <button onclick="addItem()">Añadir Concepto</button>
+        </div>
+
+        <!-- TABLA DE ITEMS -->
+        <div class="section">
+            <h2>CONCEPTOS</h2>
+            <table id="items_table">
+                <thead>
+                    <tr>
+                        <th>Ref</th>
+                        <th>Descripción</th>
+                        <th>Clases</th>
+                        <th>Precio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Items will be added here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- IMPUESTOS -->
+        <div class="section">
+            <h2>IMPUESTOS</h2>
+            <label for="tax_rate">IVA (%):</label>
+            <input type="text" id="tax_rate" value="21.0">
+            <label for="irpf_rate">IRPF (%):</label>
+            <input type="text" id="irpf_rate" value="15.0">
+        </div>
+
+        <!-- BOTONES PDF -->
+        <div class="section">
+            <button onclick="generatePDF()">Generar PDF</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <script>
+        const items = [];
+
+        function addItem() {
+            const ref = document.getElementById('item_ref').value.trim();
+            const desc = document.getElementById('item_desc').value.trim();
+            const clases = document.getElementById('item_classes').value.trim();
+            const priceStr = document.getElementById('item_price').value.trim();
+
+            if (!ref || !desc || !priceStr) {
+                alert("Por favor, rellena todos los campos del concepto.");
+                return;
+            }
+
+            const price = parseFloat(priceStr);
+            if (isNaN(price)) {
+                alert("El precio debe ser un valor numérico.");
+                return;
+            }
+
+            items.push({ ref, desc, clases, price });
+
+            const table = document.getElementById('items_table').getElementsByTagName('tbody')[0];
+            const newRow = table.insertRow();
+            newRow.insertCell(0).innerText = ref;
+            newRow.insertCell(1).innerText = desc;
+            newRow.insertCell(2).innerText = clases;
+            newRow.insertCell(3).innerText = price.toFixed(2) + " EUR";
+
+            document.getElementById('item_ref').value = '';
+            document.getElementById('item_desc').value = '';
+            document.getElementById('item_classes').value = '';
+            document.getElementById('item_price').value = '';
+        }
+
+        function generatePDF() {
+            if (items.length === 0) {
+                alert("No hay ítems agregados. Añade al menos un concepto antes de generar la factura.");
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const margin_left = 15;
+            const line_height = 10;
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+
+            // ---------------- ENCABEZADO ----------------
+            doc.text("FACTURA", margin_left, 10);
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+
+            const invoice_num = document.getElementById('invoice_num').value;
+            const invoice_date = document.getElementById('invoice_date').value;
+
+            doc.text(invoice_num, 140, 10, { align: "right" });
+            doc.text(invoice_date, 140, 16, { align: "right" });
+
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            doc.text("Fecha:", margin_left, 16);
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+
+            // ---------------- DATOS EMISOR ----------------
+            doc.text(document.getElementById('prof_name').value, margin_left, 30);
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+
+            if (document.getElementById('prof_cif').value) {
+                doc.text(`CIF/NIF: ${document.getElementById('prof_cif').value}`, margin_left, 36);
+            }
+            doc.text(document.getElementById('prof_address').value, margin_left, 42);
+            doc.text(document.getElementById('prof_city').value, margin_left, 48);
+            if (document.getElementById('prof_phone').value) {
+                doc.text(`Telf: ${document.getElementById('prof_phone').value}`, margin_left, 54);
+            }
+
+            // ---------------- DATOS CLIENTE ----------------
+            const x_client = 110;
+            const y_client = 35;
+            doc.text(document.getElementById('client_name').value, x_client, y_client);
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+
+            if (document.getElementById('client_cif').value) {
+                doc.text(`CIF/NIF: ${document.getElementById('client_cif').value}`, x_client, y_client + 6);
+            }
+            doc.text(document.getElementById('client_address').value, x_client, y_client + 12);
+            doc.text(document.getElementById('client_city').value, x_client, y_client + 18);
+
+            // ---------------- TÍTULO CONCEPTOS ----------------
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.text("CONCEPTOS", margin_left, 70);
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+
+            // ---------------- TABLA CONCEPTOS ----------------
+            const startY = 75;
+            const w_ref = 20;
+            const w_desc = 80;
+            const w_clases = 40;
+            const w_price = 30;
+
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "bold");
+            doc.text("Ref.", margin_left, startY);
+            doc.text("Descripción", margin_left + w_ref, startY);
+            doc.text("Clases", margin_left + w_ref + w_desc, startY);
+            doc.text("Precio", margin_left + w_ref + w_desc + w_clases, startY);
+
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+
+            let y = startY + line_height;
+            let subtotal = 0.0;
+            items.forEach(item => {
+                doc.text(item.ref, margin_left, y);
+                doc.text(item.desc, margin_left + w_ref, y);
+                doc.text(item.clases, margin_left + w_ref + w_desc, y);
+                doc.text(item.price.toFixed(2) + " EUR", margin_left + w_ref + w_desc + w_clases, y, { align: "right" });
+                subtotal += item.price;
+                y += line_height;
+            });
+
+            // ---------------- TOTALES (IVA/IRPF) ----------------
+            const iva_percent = parseFloat(document.getElementById('tax_rate').value);
+            const iva_amount = (subtotal * iva_percent) / 100.0;
+            const irpf_percent = parseFloat(document.getElementById('irpf_rate').value);
+            const irpf_amount = (subtotal * irpf_percent) / 100.0;
+            const total = subtotal + iva_amount - irpf_amount;
+
+            y += line_height;
+            doc.text("Base Liquid.", margin_left + w_ref + w_desc + w_clases, y);
+            doc.text(subtotal.toFixed(2) + " EUR", margin_left + w_ref + w_desc + w_clases + w_price, y, { align: "right" });
+
+            y += line_height;
+            doc.text(`I.V.A. (+${iva_percent}%)`, margin_left + w_ref + w_desc + w_clases, y);
+            doc.text(iva_amount.toFixed(2) + " EUR", margin_left + w_ref + w_desc + w_clases + w_price, y, { align: "right" });
+
+            y += line_height;
+            doc.text(`I.R.P.F. (-${irpf_percent}%)`, margin_left + w_ref + w_desc + w_clases, y);
+            doc.text(irpf_amount.toFixed(2) + " EUR", margin_left + w_ref + w_desc + w_clases + w_price, y, { align: "right" });
+
+            y += line_height;
+            doc.setFont("helvetica", "bold");
+            doc.text("Total", margin_left + w_ref + w_desc + w_clases, y);
+            doc.text(total.toFixed(2) + " EUR", margin_left + w_ref + w_desc + w_clases + w_price, y, { align: "right" });
+
+            // ---------------- FORMA DE PAGO ----------------
+            y += line_height * 2;
+            doc.setFont("helvetica", "bold");
+            doc.text("FORMA DE PAGO", margin_left, y);
+            doc.setFont("helvetica", "normal");
+            doc.text("(Transferencia bancaria)", margin_left, y + line_height);
+            doc.text("ESXXXXXXXXXXXXXXXXXX", margin_left, y + line_height * 2);
+
+            doc.save("factura.pdf");
+        }
+    </script>
+</body>
+</html>
